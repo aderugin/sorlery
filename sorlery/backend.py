@@ -63,5 +63,5 @@ class QueuedThumbnailBackend(ThumbnailBackend):
             rawvaluearr['name'] = file_.name
             default.kvstore._set_raw(add_prefix(thumbnail.key), serialize(rawvaluearr))
 
-        thumbnail.name = file_.name
+        # thumbnail.name = file_.name
         return thumbnail
