@@ -34,34 +34,11 @@ class QueuedThumbnailBackend(ThumbnailBackend):
         if cached:
             return cached
 
-        # We cannot check if the file exists, as remote storage is slow. If
-        # we have reached this point, the image does not exist in our kvstore
-        # so create the entry and queue the generation of the image.
-        #
-        # Note: If the thumbnail file has been deleted, you will need to manually
-        # clear the corresponding row from the kvstore to have thumbnail rebuilt.
         job = create_thumbnail.delay(file_, geometry_string, options, name)
-        if job:
-            geometry = parse_geometry(geometry_string)
-            # We can't add a source row to the kvstore without the size
-            # information being looked up, so add dummy information here
-            # We'll need to correct this information when we generate the thumbnail
-            source.set_size(geometry)
-            default.kvstore.get_or_set(source)
 
-            # We don't want to do any file access in this thread, so we tell sorlery
-            # to proceed as normal and cheekily update the name and storage after
-            # the hash has been calculated.
-            thumbnail.set_size(geometry)
-            default.kvstore.set(thumbnail, source)
-
-            # Now we go back and manually update the thumbnail to point at the source image
-            # Hopefully someone can suggest a better way to do this ... but the sorl internals
-            # don't make it easy to.
-            rawvalue = default.kvstore._get_raw(add_prefix(thumbnail.key))
-            rawvaluearr = deserialize(rawvalue)
-            rawvaluearr['name'] = file_.name
-            default.kvstore._set_raw(add_prefix(thumbnail.key), serialize(rawvaluearr))
-
-        # thumbnail.name = file_.name
-        return thumbnail
+        # Return source file if thumbnail not exists
+        source_image = ImageFile(file_.name, default.storage)
+        width = geometry_string.split('x')[0]
+        height = geometry_string.split('x')[1] if len(geometry_string.split('x')) > 1 else ''
+        source_image._size = [width, height]
+        return source_image
