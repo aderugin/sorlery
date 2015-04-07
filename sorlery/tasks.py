@@ -7,7 +7,7 @@ from sorl.thumbnail.images import ImageFile
 def create_thumbnail(file_, geometry_string, options, name):
     thumbnail = ImageFile(name, default.storage)
 
-    if not thumbnail.exists():
+    if not thumbnail.exists() or default.kvstore.get(thumbnail) is None:
         source = ImageFile(file_)
         source_image = default.engine.get_image(source)
         size = default.engine.get_image_size(source_image)
